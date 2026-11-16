@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Optional integration test: requires a running Omarchy Wayland session.
+# Uses temporary config/state and fixture weather responses, never personal data.
+set -euo pipefail
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+[[ -n ${WAYLAND_DISPLAY:-} ]] || { echo 'A running Wayland session is required' >&2; exit 1; }
+test_dir=$(mktemp -d)
+trap 'rm -rf -- "$test_dir"' EXIT
+mkdir -p "$test_dir/config/drunkleen.desktop-aio" "$test_dir/state" "$test_dir/bin"
+cp "$repo/tests/runtime/shell.qml" "$test_dir/shell.qml"
+cp "$repo/tests/runtime/curl" "$test_dir/bin/curl"
+ln -s "$repo" "$test_dir/plugin"
+for module in Ui Commons services; do ln -s "${OMARCHY_PATH:-/usr/share/omarchy}/shell/$module" "$test_dir/$module"; done
+printf '%s\n' 'monitor="__test__"' 'show_weather=false' 'show_spectrum=false' > "$test_dir/config/drunkleen.desktop-aio/config.toml"
+PATH="$test_dir/bin:$PATH" XDG_CONFIG_HOME="$test_dir/config" XDG_STATE_HOME="$test_dir/state" timeout 35 qs -p "$test_dir" --no-color > "$test_dir/log" 2>&1 || { cat "$test_dir/log"; exit 1; }
+cat "$test_dir/log"
+rg -q 'AIO_RUNTIME_PASS' "$test_dir/log"
+if rg -q 'AIO_RUNTIME_FAIL|ERROR:|ReferenceError|TypeError|Binding loop|Unable to assign' "$test_dir/log"; then exit 1; fi

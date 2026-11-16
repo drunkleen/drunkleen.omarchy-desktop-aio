@@ -19,6 +19,8 @@ scale = 0.55
 opacity = 1.0
 
 # Components
+show_weekday = true
+live_preview = true
 show_clock = true
 show_date = true
 show_weather = true
@@ -42,10 +44,26 @@ refresh_seconds = 900
 units = "metric"
 
 [spectrum]
-bars = 40
+bars = 34
 fps = 30
 smoothing = 45
 sensitivity = 1.0
 
 [media]
 max_width = 320
+
+# Custom positions are in design pixels; order is back-to-front stacking.
+[layout]
+order = ["weather", "weekday", "clock", "date", "media", "spectrum"]
+snap = true
+
+# Sakura preserves the existing style; Automatic is an explicit opt-in.
+[ambient]
+enabled = true
+mode = "sakura"
+density = 0.4
+speed = 0.5
+opacity = 0.75
+size = 1.0
+wind = 0.3
+preview = true

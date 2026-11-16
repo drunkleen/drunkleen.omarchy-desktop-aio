@@ -19,3 +19,9 @@ See <https://www.gnu.org/licenses/gpl-3.0.html>.
 The Ryoku-specific runtime (ryoku-shell daemon, widget host, matugen palette,
 material-you scheme) is NOT used; weather, configuration and theming are
 reimplemented for Omarchy (Open-Meteo + Omarchy theme colors).
+
+The pooled Sakura renderer in ambient/Petal.qml and ambient/PetalField.qml is
+adapted from drunkleen's miyamoto.sakura-rain dotfiles package:
+https://github.com/drunkleen/dotfiles/tree/omarchy/miyamoto.sakura-rain
+Its original vector silhouette, depth projection, motion clock, window avoidance
+and background-layer design are retained and extended for ambient effects.

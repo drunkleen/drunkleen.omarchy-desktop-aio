@@ -162,3 +162,269 @@ weather code mapping. See [NOTICE](NOTICE) for attribution and source paths.
 Distributed under [GPL-3.0-only](LICENSE). No Ryoku daemon or theme-generation
 runtime is required. This is a community plugin and is not affiliated with the
 Omarchy project.
+
+## Interactive settings (1.2)
+
+Right-click the desktop card for lock/unlock, a **Size** submenu, an **Anchor**
+submenu, weather visibility, measurement units, the 24-hour-clock switch,
+**Configure…**, and **Edit config file**. Values and selections stay synchronized
+with the personal TOML file. Submenus scroll and stay within the current screen;
+click outside or press Escape to close them. Size changes require unlocking.
+Anchor changes apply to the monitor you clicked, clear that monitor's saved drag
+position, and preserve its size and all other monitors' state.
+
+**Configure…** opens a single native window with eight categories:
+
+| Category | Settings |
+| --- | --- |
+| General | Clock format, independent component visibility, panel live preview |
+| Weather | City suggestions with region/country, units, refresh interval, manual refresh and request status |
+| Appearance | Widget opacity, default scale, display/icon fonts, foreground/accent overrides, follow theme and category reset |
+| Placement | Actual connected monitors, display selection, 3×3 anchors, free coordinates, margins, lock and saved position/size resets |
+| Components & Layout | Visibility, stacking order, visual position editor, snap-to-grid, individual and full layout resets |
+| Audio Spectrum | Visibility, bar count, frame rate, smoothing and sensitivity |
+| Media | Independent now-playing visibility and maximum text width |
+| Advanced | Editor/directory integration, reload, TOML import/export and confirmed resets |
+
+Changes apply immediately and save automatically after 300 ms of inactivity.
+The opacity setting affects the card artwork, never the menu or settings window.
+At near-zero opacity an interaction outline remains on the desktop. If you lose
+track of the card, reopen settings through the service's recovery IPC:
+
+```bash
+omarchy-shell desktopAio configure
+```
+
+The desktop surface never requests keyboard focus. The menu requests focus only
+while visible; the settings window uses normal window focus. Tab/Shift+Tab and
+standard text-field/slider keys work in settings; Escape closes the active menu,
+confirmation, or settings window.
+
+### City search and weather
+
+Type at least two characters and choose a suggestion to save a location.
+Country and region distinguish namesakes. Empty, invalid, or failed searches do
+not replace the saved location. Search is debounced; obsolete requests are
+canceled and generation-checked. Unit/location changes trigger a fresh forecast;
+disabling weather cancels the forecast and its refresh timer. Search requests
+are explicit and independent of desktop weather visibility, so a disabled card
+can still be configured. Closing settings cancels any outstanding city search.
+
+### Layout editing
+
+The component list runs **back to front**: reordering changes actual stacking,
+not coordinates. Drag a list handle up/down and release, or use the arrow
+buttons for the selected component. Overlap is intentional and supported.
+
+Drag a component outline inside the preview to change its position, or select it
+and edit its X/Y values. Arrow keys move the selected component (8 design pixels
+with snapping, 1 without). Hidden components remain selectable in the editor.
+Positions are bounded to the 708 × 454 design canvas. Weather, weekday, clock,
+date, media and spectrum each have independent visibility and coordinates.
+Now-playing no longer depends on date visibility. The decorative divider hides
+if its related components are hidden or repositioned, so it does not become an
+orphaned decoration. Without customization, the original coordinates and
+artistic composition are retained. The default spectrum has 34 rendered bars;
+existing explicit bar-count settings are now respected by the renderer.
+
+### Persistence, compatibility and resets
+
+User settings remain in `${XDG_CONFIG_HOME:-~/.config}/drunkleen.desktop-aio/config.toml`.
+The plugin's bundled `config.toml` is read-only defaults. The editor action
+creates a personal file when necessary and uses `omarchy launch editor`.
+Placement remains version 1 JSON, with an optional `anchors` map added alongside
+`monitors`, `sizes`, and `locked`. Existing position/size files need no migration
+or deletion. Screen disconnection retains its saved state for reconnection;
+positions and effective sizes are clamped to available screen geometry.
+
+Configuration edits preserve unknown settings, unrelated comments, and section
+ordering where practical. Writes patch only changed keys, use atomic FileView
+writes, and reread disk before saving. Unrelated external edits are merged;
+conflicting edits to the same key stop the save and show an error instead of
+silently overwriting the editor's value. Reload discards pending UI changes and
+reads the file again. Malformed configuration is reported and never replaced
+with defaults automatically. After repairing it in your editor, reload or save
+the file to resume interactive updates.
+
+The TOML document editor supports booleans, finite integers/floats, escaped and
+literal strings, multiline strings, arrays, dotted keys, nested sections, inline
+tables, comments, and unknown date/time values. Unsupported constructs such as
+arrays of tables are rejected with an error, preserving the original file.
+There are no such constructs in the plugin's configuration schema.
+
+Import/export use an explicit absolute file path in Advanced. **Import** validates
+before asking for confirmation, then merges the supplied keys, preserving
+unrelated settings and all placement state. **Export** writes effective settings
+(including defaults) after confirmation. Resets and imports require confirmation:
+category resets affect only that category; layout resets affect only component
+positions/order; personal-configuration reset leaves monitor state alone. Only
+**Reset configuration and all placement state** clears positions, sizes, anchors
+and the lock state too. Removing a saved position restores configured placement;
+removing a saved size restores the configured scale.
+
+New backward-compatible configuration keys include:
+
+```toml
+show_weekday = true
+live_preview = true
+
+[weather]
+# Written when choosing a validated city suggestion:
+label = "Dresden, Saxony, Germany"
+location_city = "Dresden"
+latitude = 51.05
+longitude = 13.74
+
+[layout]
+order = ["weather", "weekday", "clock", "date", "media", "spectrum"]
+snap = true
+
+[layout.clock]
+x = 392
+y = 74
+```
+
+Equivalent `layout.<component>.x/y` settings work for all six components. Omit a
+position key to use its original coordinate. Personal `scale` remains the default;
+per-monitor sizes in placement state override it. The appearance scale slider
+also clears the selected monitor's saved size so the change is visible there.
+Margins/free-coordinate defaults are shared; placement actions in the panel
+explicitly target the selected connected monitor.
+
+### Validation and runtime checks
+
+```bash
+omarchy plugin validate .
+node --test tests/*.test.cjs
+bash -n scripts/cava-stream scripts/check-runtime
+shellcheck scripts/cava-stream scripts/check-runtime tests/runtime/curl
+./scripts/check-runtime
+```
+
+The optional runtime check requires an unlocked Omarchy Wayland session. It
+opens a temporary settings window, exercises all categories, persistence and
+external-edit merging, city suggestions, live unit changes and cancellation,
+and an edge-of-screen context menu. It uses temporary XDG directories and
+fixture HTTPS responses; it never edits personal settings or calls the real
+weather API. It exits nonzero if the expected completion marker is absent or
+runtime QML errors are logged.
+
+Manual release verification should still cover real audio devices, physical
+monitor unplug/replug, pointer drags/resizing, keyboard navigation, fractional
+scaling, and both light/dark themes. The automated tests cover document editing,
+validation, resets/imports, legacy state, per-monitor precedence, layout models,
+request-generation handling and the Cava helper.
+
+## Ambient & seasonal effects (1.3)
+
+Desktop AIO now hosts the existing Sakura Rain renderer: the same vector petal
+silhouette, shading, perspective depth, flutter, window avoidance, and
+click-through **background** layer, extended with seasonal palettes and
+precipitation. There is one fixed particle pool and one motion clock per monitor,
+not a separate renderer for each effect. No images are downloaded, no emoji are
+rendered, and no additional weather provider is used.
+
+![Actual pooled renderer previews at increased density and size](assets/ambient-effects.png)
+
+Open **Configure… → Ambient Effects**, or right-click → **Ambient Effects** for
+quick selection. Available choices are:
+
+- **Disabled** — immediately stops and clears particle animation.
+- **Automatic** — current precipitation first, then meteorological season.
+- **Sakura petals** — original burgundy/pink petal palette and falling motion.
+- **Green leaves**, **Yellow leaves**, **Orange leaves** — the same artistic
+  silhouette with varied green, gold, amber and brown gradients.
+- **Rain** — fast, elongated, subtly wind-slanted vector streaks.
+- **Snow** — slow, drifting six-armed vector flakes.
+
+Manual choices always override automatic selection. Disabling sets only
+`ambient.enabled = false`; the last selected mode is retained for re-enabling.
+Existing configurations without `[ambient]` retain the **Sakura** default.
+Automatic is available but never forced on existing installations.
+
+### Automatic selection
+
+Precipitation has priority in every season and hemisphere:
+
+1. **Snow:** WMO 71, 73, 75, 77, 85, 86.
+2. **Rain:** drizzle/freezing drizzle 51, 53, 55, 56, 57; rain/freezing rain 61,
+   63, 65, 66, 67; showers 80, 81, 82; thunderstorms 95, 96, 99.
+3. **Otherwise:** spring Sakura, summer green leaves, autumn orange leaves,
+   winter no particles. Winter alone never produces artificial snow.
+
+Northern seasons are March–May, June–August, September–November, and
+December–February. A configured latitude below zero reverses these by six months.
+The equator and unavailable/invalid latitude use a documented **Northern
+Hemisphere** fallback. Yellow leaves are available as a manual palette.
+
+The configured location's date is calculated from the existing Open-Meteo UTC
+offset when available. Without it, the computer's local date is used. Selection
+updates on weather/location changes, mode changes, month boundaries, startup,
+and clock jumps after resume. The panel displays the resolved effect and reason.
+
+Ambient effects never start weather requests. They reuse the existing forecast
+only while weather is enabled, current and matched to the configured city. With
+weather disabled, unavailable, or in an error state, Automatic uses seasonal
+fallback; valid configured/cached location metadata can still determine the
+hemisphere and date. Manual modes never add weather polling.
+
+### Controls and configuration
+
+All settings use the existing personal TOML, live setters and atomic persistence.
+Changing opacity here affects particles, independently of card opacity. The
+live preview uses the same renderer inside the settings window and pauses when
+hidden. Irrelevant controls are disabled while effects are off.
+
+```toml
+[ambient]
+enabled = true
+mode = "sakura"      # auto | sakura | green_leaves | yellow_leaves | orange_leaves | rain | snow
+density = 0.4        # 0..1
+speed = 0.5          # 0.1..2; 0.5 preserves original Sakura speed
+opacity = 0.75       # 0..1
+size = 1.0           # 0.25..3; multiplier
+wind = 0.3           # 0..3; 0.3 preserves original Sakura drift
+preview = true      # settings-window live preview
+```
+
+Unknown modes and invalid values are rejected by the configuration API without
+rewriting the file. The renderer also normalizes unsafe values defensively.
+**Reset ambient settings** requires confirmation and resets only this section.
+
+### Existing standalone Sakura service
+
+The prior animation lives in the separate `sakura-rain` user service. To avoid
+two full-desktop overlays, AIO checks for a running/enabled legacy service or a
+running legacy Quickshell configuration before mapping its desktop effects.
+An enabled legacy service is treated as the owner even before it starts, avoiding
+a session-start race. The AIO preview remains available while the legacy service
+owns the desktop.
+
+In Ambient Effects, **Use Desktop AIO effects…** asks for confirmation, then stops
+and disables that legacy service and closes its Quickshell instance. It preserves
+its files and configuration; AIO's new settings remain in the personal AIO TOML.
+No automatic takeover occurs during installation or testing. Existing nondefault
+Sakura Rain tuning is not imported automatically—use the ambient controls to
+match it before confirming the handoff. **Recheck standalone overlay** refreshes
+the ownership check if you change the old service externally.
+
+The default original background scope is retained across all monitors,
+independent of the AIO card's monitor selector. Particles fade under normal
+windows and pause on fullscreen workspaces. Input regions remain empty.
+
+### Rendering lifecycle
+
+The fixed pool is capped at **128 particles per monitor**, including retiring
+particles during effect transitions. Mode switches retire old particles and fade
+new ones in over roughly 650 ms inside the same pool. Disabled effects clear
+immediately and stop their timer. Zero density drains existing particles and
+then stops; zero opacity pauses processing. Hidden/fullscreen surfaces and
+hidden previews stop their motion clocks. Speed, opacity, size and drift update
+existing particles live; density changes reconcile the existing pool.
+
+The optional isolated runtime suite now checks ambient controls, pause/resume,
+manual/automatic transitions, a fixed pool, and that frame counts stop when
+disabled or at zero density. Policy tests cover every precipitation code, both
+hemispheres, all months and boundaries, missing data, invalid input, compatibility
+and persistence. Physical monitor reconnect/fullscreen behavior and long-running
+GPU/power usage remain manual release checks.

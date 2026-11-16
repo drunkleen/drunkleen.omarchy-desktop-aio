@@ -6,3 +6,17 @@ singleton AudioBars 1.0 AudioBars.qml
 singleton Media 1.0 Media.qml
 GlyphIcon 1.0 GlyphIcon.qml
 AioWidget 1.0 AioWidget.qml
+singleton Placement 1.0 Placement.qml
+SettingsPanel 1.0 SettingsPanel.qml
+AdvancedSettings 1.0 AdvancedSettings.qml
+LayoutEditor 1.0 LayoutEditor.qml
+CitySearch 1.0 CitySearch.qml
+AnchorSelector 1.0 AnchorSelector.qml
+SettingControl 1.0 SettingControl.qml
+ContextMenu 1.0 ContextMenu.qml
+ComponentEditor 1.0 ComponentEditor.qml
+HttpRequest 1.0 HttpRequest.qml
+Service 1.0 Service.qml
+singleton Ambient 1.0 Ambient.qml
+AmbientSettings 1.0 AmbientSettings.qml
+AmbientSurfaces 1.0 AmbientSurfaces.qml

@@ -33,11 +33,11 @@ test('Cava helper passes config to Cava, cleans temporary file, and rejects shel
 });
 
 test('size changes preserve old placement and persist per monitor outside configuration', () => {
-  const source = fs.readFileSync(path.join(root, 'Service.qml'), 'utf8');
-  const methods = source.slice(source.indexOf('  function saveState()'), source.indexOf('  FileView {'));
+  const source = fs.readFileSync(path.join(root, 'Placement.qml'), 'utf8');
+  const methods = source.slice(source.indexOf('  function saveState()'), source.indexOf('  property FileView'));
   let saved;
   const context = vm.createContext({
-    positions: {'DP-2': {x: 0.3, y: 1}}, sizes: {}, locked: true, stateReady: true,
+    positions: {'DP-2': {x: 0.3, y: 1}}, sizes: {}, anchors: {}, locked: true, stateReady: true,
     Config: {scale: 0.55}, stateFile: {setText: text => saved = JSON.parse(text)}
   });
   context.root = context;

@@ -9,7 +9,8 @@ import "Toml.js" as Toml
 QtObject {
   id: root
 
-  readonly property string path: (Quickshell.env("HOME") || "") + "/.local/state/omarchy/current/theme/colors.toml"
+  readonly property string path: (Quickshell.env("XDG_STATE_HOME") || ((Quickshell.env("HOME") || "") + "/.local/state"))
+                                 + "/omarchy/current/theme/colors.toml"
 
   property var colors: ({})
 
@@ -17,7 +18,13 @@ QtObject {
     path: root.path
     watchChanges: true
     printErrors: false
-    onLoaded: root.colors = Toml.parse(text())
+    onLoaded: {
+      try {
+        root.colors = Toml.parse(text());
+      } catch (e) {
+        console.warn("Desktop AIO: invalid theme colors");
+      }
+    }
     onFileChanged: reload()
   }
 

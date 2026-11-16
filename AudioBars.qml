@@ -10,13 +10,23 @@ QtObject {
   id: root
 
   property var activeOwners: []
-  readonly property bool active: activeOwners.length > 0
+  readonly property bool active: Config.showSpectrum && activeOwners.length > 0
+  property bool restarting: false
+  readonly property string processKey: JSON.stringify([bars, fps, Config.smoothing])
+  onProcessKeyChanged: {
+    if (cavaProc.running) {
+      restarting = true;
+    }
+    restartTimer.restart();
+  }
 
   function setActive(owner, enabled) {
     var next = activeOwners.slice();
     var i = next.indexOf(owner);
-    if (enabled && i < 0) next.push(owner);
-    else if (!enabled && i >= 0) next.splice(i, 1);
+    if (enabled && i < 0)
+      next.push(owner);
+    else if (!enabled && i >= 0)
+      next.splice(i, 1);
     root.activeOwners = next;
   }
 
@@ -30,29 +40,34 @@ QtObject {
 
   function flat() {
     var a = [];
-    for (var i = 0; i < root.bars; i++) a.push(0);
+    for (var i = 0; i < root.bars; i++)
+      a.push(0);
     return a;
   }
 
   property Process cava: Process {
     id: cavaProc
-    running: root.active && !cavaProc.backoff
+    running: root.active && !cavaProc.backoff && !root.restarting
     property bool backoff: false
-    command: ["bash", decodeURIComponent(String(Qt.resolvedUrl("scripts/cava-stream")).replace(/^file:\/\//, "")),
-      String(root.fps), String(root.bars), String(Math.max(0, Math.min(100, Config.smoothing)))]
+    command: ["bash", decodeURIComponent(String(Qt.resolvedUrl("scripts/cava-stream")).replace(/^file:\/\//,
+                                                                                               "")), String(
+        root.fps), String(root.bars), String(Math.max(0, Math.min(100, Config.smoothing)))]
     stdout: SplitParser {
       splitMarker: "\n"
-      onRead: (line) => root.readBars(line)
+      onRead: line => root.readBars(line)
     }
     onExited: if (root.active) {
-      cavaProc.backoff = true;
-      restartTimer.restart();
-    }
+                cavaProc.backoff = true;
+                root.restartTimer.restart();
+              }
   }
 
   property Timer restartTimer: Timer {
     interval: 1200
-    onTriggered: root.cava.backoff = false
+    onTriggered: {
+      root.restarting = false;
+      cavaProc.backoff = false;
+    }
   }
 
   // cava stops emitting while playback idles; fall back to flat.
@@ -61,23 +76,26 @@ QtObject {
     running: root.active
     repeat: true
     onTriggered: if (Date.now() - root.lastReadMs > 280) {
-      root.levels = root.flat();
-      root.energy = 0;
-    }
+                   root.levels = root.flat();
+                   root.energy = 0;
+                 }
   }
 
   function norm(v) {
     var n = parseInt(v);
-    if (isNaN(n)) return 0;
+    if (isNaN(n))
+      return 0;
     var x = (n / 100) * root.sensitivity;
     return Math.max(0, Math.min(1, x));
   }
 
   function readBars(line) {
     var t = String(line || "").trim();
-    if (!t) return;
+    if (!t)
+      return;
     var parts = t.split(/[;\s]+/);
-    if (parts.length < root.bars) return;
+    if (parts.length < root.bars)
+      return;
     var out = [];
     var sum = 0;
     for (var i = 0; i < root.bars; i++) {
@@ -93,6 +111,7 @@ QtObject {
   onActiveChanged: {
     root.levels = root.flat();
     root.energy = 0;
-    if (root.active) root.lastReadMs = 0;
+    if (root.active)
+      root.lastReadMs = 0;
   }
 }
