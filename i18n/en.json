@@ -1,4 +1,8 @@
 {
   "position.unlock": "Unlock position",
-  "position.lock": "Lock position"
+  "position.lock": "Lock position",
+  "size.menu": "Size",
+  "size.smaller": "Smaller",
+  "size.larger": "Larger",
+  "size.configured": "Configured size"
 }

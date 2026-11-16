@@ -13,6 +13,9 @@ now-playing track — together in a compact card that follows your Omarchy theme
 
 - **Move it once.** Right-click → **Unlock position**, drag with the left mouse
   button, then right-click → **Lock position**. An accent outline marks edit mode.
+- **Resize it.** While unlocked, drag the bottom-right corner, or right-click →
+  **Size** for smaller/larger steps, percentage presets, or the configured size.
+  The aspect ratio stays fixed; each monitor remembers its own size.
 - **Keep it where it belongs.** Position is remembered per monitor, outside the
   plugin checkout. It survives shell restarts and plugin updates.
 - **Stay out of the way.** A bottom-layer Wayland surface sits above the wallpaper
@@ -85,13 +88,13 @@ Saved drag positions take precedence over configured anchors for that monitor.
 
 ### Saved placement
 
-The lock state and normalized per-monitor positions are stored at:
+The lock state, per-monitor size, and normalized positions are stored at:
 
 ```text
 ${XDG_STATE_HOME:-~/.local/state}/drunkleen.desktop-aio/placement.json
 ```
 
-The file is written when you release a drag or toggle the lock, never into your
+The file is written when you release a drag/resize, choose a size, or toggle the lock, never into your
 plugin checkout or dotfiles. Positions stay within the screen when its size
 changes. Dragging is within a monitor; `monitor` controls which displays show a
 card. The lock toggle applies to all cards.

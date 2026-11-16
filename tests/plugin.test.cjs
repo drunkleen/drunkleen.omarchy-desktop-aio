@@ -31,3 +31,26 @@ test('Cava helper passes config to Cava, cleans temporary file, and rejects shel
     assert.equal(run(['30; touch /tmp/aio-injection', '40', '45']).status, 2);
   } finally { fs.rmSync(temp, {recursive: true, force: true}); }
 });
+
+test('size changes preserve old placement and persist per monitor outside configuration', () => {
+  const source = fs.readFileSync(path.join(root, 'Service.qml'), 'utf8');
+  const methods = source.slice(source.indexOf('  function saveState()'), source.indexOf('  FileView {'));
+  let saved;
+  const context = vm.createContext({
+    positions: {'DP-2': {x: 0.3, y: 1}}, sizes: {}, locked: true, stateReady: true,
+    Config: {scale: 0.55}, stateFile: {setText: text => saved = JSON.parse(text)}
+  });
+  context.root = context;
+  vm.runInContext(methods, context);
+  assert.equal(context.sizeFor('DP-2'), 0.55); // Existing state has no size field.
+  context.setSize('DP-2', 0.75);
+  context.saveState();
+  assert.equal(saved.sizes['DP-2'], 0.75);
+  assert.equal(saved.monitors['DP-2'].x, 0.3);
+  assert.equal(saved.locked, true);
+  assert.equal(context.sizeFor('eDP-1'), 0.55);
+  context.setSize('DP-2', 9);
+  assert.equal(context.sizeFor('DP-2'), 3);
+  context.setSize('DP-2', null);
+  assert.equal(context.sizeFor('DP-2'), 0.55);
+});
