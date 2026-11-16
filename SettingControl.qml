@@ -15,7 +15,6 @@ Column {
   property real maximum: 1
   property real step: 0.01
   property var current: Toml.get(Config.data, setting.split('.'))
-  property bool locallyEdited: false
   signal committed(var value)
   function apply(value) {
     if (Config.setValue(setting, value))
@@ -31,6 +30,7 @@ Column {
     font.pixelSize: Commons.Style.font.body
   }
   Ui.Toggle {
+    objectName: "toggle-" + root.setting
     activeFocusOnTab: true
     Keys.onSpacePressed: root.apply(!checked)
     visible: root.kind === 'toggle'
@@ -41,6 +41,7 @@ Column {
   }
   Ui.TextField {
     id: field
+    objectName: "text-" + root.setting
     visible: root.kind === 'text'
     width: parent.width
     text: String(root.current === undefined ? '' : root.current)
@@ -57,16 +58,16 @@ Column {
     value: Number(root.current || 0)
     onModified: value => root.apply(value)
   }
-  Ui.Dropdown {
-    activeFocusOnTab: true
+  SelectControl {
+    objectName: 'select-' + root.setting
     visible: root.kind === 'select'
     width: parent.width
-    showLabel: false
     value: String(root.current)
     options: root.options
     onChanged: value => root.apply(value)
   }
   C.Slider {
+    objectName: "slider-" + root.setting
     visible: root.kind === 'slider'
     width: parent.width
     from: root.minimum
@@ -77,6 +78,6 @@ Column {
     palette.button: Theme.background
     palette.window: Theme.background
     palette.text: Theme.foreground
-    onMoved: root.apply(value)
+    onMoved: root.apply(Number(value.toFixed(6)))
   }
 }

@@ -7,7 +7,7 @@ import "plugin/ambient" as Particles
 
 ShellRoot {
   id: root
-  Aio.Service {}
+  property Component serviceType: Component {Aio.Service {}}
   Aio.SettingsPanel {
     id: panel
   }

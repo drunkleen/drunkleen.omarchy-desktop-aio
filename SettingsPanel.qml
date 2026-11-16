@@ -167,7 +167,7 @@ FloatingWindow {
               color: Theme.inkDim
               text: root.tr('placement.help')
             }
-            Ui.Dropdown {
+            SelectControl {
               activeFocusOnTab: true
               width: parent.width
               label: root.tr('placement.target')
@@ -180,7 +180,7 @@ FloatingWindow {
               })
               onChanged: value => root.monitorName = value
             }
-            Ui.Dropdown {
+            SelectControl {
               activeFocusOnTab: true
               width: parent.width
               label: root.tr('monitor')

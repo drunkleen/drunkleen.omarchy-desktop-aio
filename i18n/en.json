@@ -133,5 +133,7 @@
   "ambient.takeover": "Use Desktop AIO effects…",
   "ambient.recheck": "Recheck standalone overlay",
   "ambient.takeoverError": "Could not stop the standalone Sakura service. Check its user-service permissions and try again.",
-  "ambient.takeoverConfirm": "Stop and disable the standalone Sakura overlay and use Desktop AIO effects? Its source and configuration files will be preserved."
+  "ambient.takeoverConfirm": "Stop and disable the standalone Sakura overlay and use Desktop AIO effects? Its source and configuration files will be preserved.",
+  "units.metric.short": "Metric",
+  "units.imperial.short": "Imperial"
 }

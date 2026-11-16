@@ -428,3 +428,23 @@ disabled or at zero density. Policy tests cover every precipitation code, both
 hemispheres, all months and boundaries, missing data, invalid input, compatibility
 and persistence. Physical monitor reconnect/fullscreen behavior and long-running
 GPU/power usage remain manual release checks.
+
+### 1.3.1 interaction fixes
+
+The context menu uses native, scrolling submenus with automatic edge placement,
+keyboard navigation and Escape handling. It opens after the right button is
+released. Settings selectors retain their configuration bindings and select the
+clicked item without requiring a prior hover. Particle density changes reconcile
+the existing pool immediately, with the usual fade, rather than waiting for slow
+natural spawning. The same selector is used for effects, units, anchors and
+monitors.
+
+An additional real-input regression check is available:
+
+```bash
+./scripts/check-runtime controls.qml
+```
+
+It clicks the actual controls, verifies persistence/binding synchronization,
+checks rendered particle size and prompt density changes, and exercises native
+submenu selection and Escape/focus release. Temporary configurations are used.

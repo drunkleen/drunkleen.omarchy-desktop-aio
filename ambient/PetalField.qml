@@ -88,6 +88,7 @@ Item {
     seedOnce();
   }
   function reconcileDensity() {
+    transitionPending = true;
     var kept = 0;
     for (var i = 0; i < poolSize; i++) {
       const p = petals.itemAt(i);
@@ -126,7 +127,7 @@ Item {
     }
     liveCount = living;
     if (transitionPending && effect !== "none" && effectsEnabled) {
-      const target = Math.round(count * 0.8);
+      const target = count;
       while (current < target) {
         if (!spawnOne(true))
           break;

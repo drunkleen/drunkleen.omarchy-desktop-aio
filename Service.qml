@@ -99,14 +99,21 @@ Item {
           property point initial
           onPressed: mouse => {
             if (mouse.button === Qt.RightButton) {
-              var p = mapToItem(win.contentItem, mouse.x, mouse.y);
-              contextMenu.openAt(win.modelData, p.x, p.y);
+              // Open only after release; do not transfer an in-flight press
+              // into the overlay/menu's input grab.
+              return;
             } else if (!Placement.locked) {
               origin = mapToItem(win.contentItem, mouse.x, mouse.y);
               initial = Qt.point(widget.x, widget.y);
               win.dragX = widget.x;
               win.dragY = widget.y;
               dragging = true;
+            }
+          }
+          onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+              var p = mapToItem(win.contentItem, mouse.x, mouse.y);
+              contextMenu.openAt(win.modelData, p.x, p.y);
             }
           }
           onPositionChanged: mouse => {

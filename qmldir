@@ -20,3 +20,6 @@ Service 1.0 Service.qml
 singleton Ambient 1.0 Ambient.qml
 AmbientSettings 1.0 AmbientSettings.qml
 AmbientSurfaces 1.0 AmbientSurfaces.qml
+ContextMenuItem 1.0 ContextMenuItem.qml
+MenuSurface 1.0 MenuSurface.qml
+SelectControl 1.0 SelectControl.qml
