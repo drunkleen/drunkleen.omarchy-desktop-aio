@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Resolve a playback monitor only; never capture the default microphone.
+set -euo pipefail
+inputs=$(pactl -f json list sink-inputs)
+sinks=$(pactl -f json list sinks)
+default=$(pactl get-default-sink)
+jq -nr --argjson inputs "$inputs" --argjson sinks "$sinks" --arg default "$default" '
+  ($inputs | map(select(.corked == false and .mute != true)
+    | select([.properties["application.name"], .properties["application.process.binary"],
+              .properties["application.id"], .properties["media.name"]]
+      | map(. // "") | join(" ") | test("spotify|librespot|spotifyd|ncspot"; "i")))
+    | first | .sink) as $spotify |
+  (($sinks | map(select(.index == $spotify)) | first) //
+   ($sinks | map(select(.name == $default)) | first)) |
+  .monitor_source // empty' | {
+  IFS= read -r source || exit 1
+  [[ $source =~ ^[A-Za-z0-9_.:@/-]+$ && $source == *.monitor ]] || exit 1
+  printf '%s\n' "$source"
+}

@@ -5,7 +5,10 @@
 Weather, a bold weekday, a clock and date, a live audio spectrum, and your
 now-playing track — together in a compact card that follows your Omarchy theme.
 
-![Desktop AIO layout illustration](preview.png)
+<img width="100%" src="assets/preview.png" />
+
+<img width="49%" src="assets/preview2.png" />
+<img width="49%" src="assets/preview3.png" />
 
 *Layout illustration with sample data. Colors follow your active theme.*
 
@@ -34,7 +37,7 @@ Omarchy plugin, not a standalone Quickshell configuration.
 Install the runtime dependencies:
 
 ```bash
-omarchy pkg add cava inter-font ttf-material-symbols-variable curl
+omarchy pkg add cava inter-font ttf-material-symbols-variable curl jq libpulse
 ```
 
 Add and enable the plugin:
@@ -111,7 +114,11 @@ lookup is used. Set `show_weather = false` to stop weather requests. Requests
 have time and size limits. [Open-Meteo](https://open-meteo.com/) supplies weather
 under [CC BY 4.0](https://open-meteo.com/en/licence).
 
-Cava reads the PipeWire playback monitor for visualization. MPRIS track metadata
+Cava reads a playback monitor through PipeWire’s PulseAudio compatibility server.
+While Spotify (including librespot/spotifyd/ncspot) plays locally, its output
+device is selected; otherwise the default output device is used. Output changes
+are detected live. Spotify Connect playback on another device has no local audio
+to visualize. Microphone sources are never selected. MPRIS track metadata
 is read locally over the session bus. The plugin invokes `curl`, `mkdir`, and
 its bundled Cava helper. It needs no root access and runs inside Omarchy's shell.
 
@@ -474,3 +481,22 @@ leaving the screen. Other ambient motion retains its existing timing.
 speed, visible drop opacity, and complete shutdown when disabled. The read-only
 `omarchy-shell desktopAio ambientStatus` command reports effect selection and
 per-monitor motion/visibility diagnostics without changing settings.
+
+### 1.3.4 audio routing and live themes
+
+The spectrum follows local Spotify playback even when it uses another output,
+and falls back to the default playback monitor when Spotify pauses or exits.
+`pactl` (from `libpulse`) and `jq` resolve output routing; one event subscription
+and one Cava analyser run only while the spectrum is enabled and visible.
+
+Spectrum bars always use the active Omarchy theme's primary accent through the
+shell's live palette, independently of a custom widget accent. Ambient surfaces
+use the click-through bottom desktop layer, above background wallpapers and below
+application windows, so wallpaper/theme replacements cannot cover the effects.
+No theme hooks or additional animation engines are required.
+
+`./scripts/check-runtime audio-theme.qml` checks live palette updates, playback
+monitor capture, and process cleanup. Source-selection tests cover Spotify on a
+separate output, paused/muted streams, removed devices, and invalid input.
+
+Read-only live audio diagnostics: `omarchy-shell desktopAio audioStatus`.

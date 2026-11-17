@@ -12,7 +12,61 @@ QtObject {
   property var activeOwners: []
   readonly property bool active: Config.showSpectrum && activeOwners.length > 0
   property bool restarting: false
-  readonly property string processKey: JSON.stringify([bars, fps, Config.smoothing])
+  property string source: ""
+  property bool eventBackoff: false
+  function helper(name) {
+    return decodeURIComponent(String(Qt.resolvedUrl("scripts/" + name)).replace(/^file:\/\//, ""));
+  }
+  property Process sourceLookup: Process {
+    command: ["bash", root.helper("spectrum-source")]
+    stdout: StdioCollector {
+      onStreamFinished: {
+        var value = text.trim();
+        if (root.active && /^[A-Za-z0-9_.:@/-]+\.monitor$/.test(value))
+          root.source = value;
+      }
+    }
+    onExited: code => {
+      if (code !== 0 && root.active)
+        root.lookupRetry.restart();
+    }
+  }
+  property Timer lookupRetry: Timer {
+    interval: 2000
+    onTriggered: if (root.active)
+                   root.sourceTimer.restart()
+  }
+  property Timer sourceTimer: Timer {
+    interval: 500
+    onTriggered: {
+      if (!root.active)
+        return;
+      if (root.sourceLookup.running)
+        restart();
+      else
+        root.sourceLookup.running = true;
+    }
+  }
+  property Process routingEvents: Process {
+    running: root.active && !root.eventBackoff
+    command: ["env", "LC_ALL=C", "pactl", "subscribe"]
+    stdout: SplitParser {
+      onRead: line => {
+        // Ignore Cava's own recording stream events to avoid restart loops.
+        if (/ on (sink|sink-input|server)(?: #|$)/.test(line))
+          root.sourceTimer.restart();
+      }
+    }
+    onExited: if (root.active) {
+                root.eventBackoff = true;
+                root.eventRetry.restart();
+              }
+  }
+  property Timer eventRetry: Timer {
+    interval: 2000
+    onTriggered: root.eventBackoff = false
+  }
+  readonly property string processKey: JSON.stringify([bars, fps, Config.smoothing, source])
   onProcessKeyChanged: {
     if (cavaProc.running) {
       restarting = true;
@@ -47,11 +101,11 @@ QtObject {
 
   property Process cava: Process {
     id: cavaProc
-    running: root.active && !cavaProc.backoff && !root.restarting
+    running: root.active && root.source !== "" && !cavaProc.backoff && !root.restarting
     property bool backoff: false
     command: ["bash", decodeURIComponent(String(Qt.resolvedUrl("scripts/cava-stream")).replace(/^file:\/\//,
                                                                                                "")), String(
-        root.fps), String(root.bars), String(Math.max(0, Math.min(100, Config.smoothing)))]
+        root.fps), String(root.bars), String(Math.max(0, Math.min(100, Config.smoothing))), root.source]
     stdout: SplitParser {
       splitMarker: "\n"
       onRead: line => root.readBars(line)
@@ -111,7 +165,16 @@ QtObject {
   onActiveChanged: {
     root.levels = root.flat();
     root.energy = 0;
-    if (root.active)
+    if (root.active) {
       root.lastReadMs = 0;
+      root.sourceTimer.restart();
+    } else {
+      root.sourceTimer.stop();
+      root.lookupRetry.stop();
+      root.eventRetry.stop();
+      root.eventBackoff = false;
+      root.sourceLookup.running = false;
+      root.source = "";
+    }
   }
 }

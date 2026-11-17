@@ -26,7 +26,7 @@ test('Cava helper passes config to Cava, cleans temporary file, and rejects shel
     const run = args => spawnSync('bash', [path.join(root, 'scripts/cava-stream'), ...args], {env});
     assert.equal(run(['30', '40', '45']).status, 0);
     assert.match(fs.readFileSync(capture, 'utf8'), /framerate = 30\nbars = 40/);
-    assert.match(fs.readFileSync(capture, 'utf8'), /method = pipewire/);
+    assert.match(fs.readFileSync(capture, 'utf8'), /method = pulse/);
     assert.equal(fs.existsSync(fs.readFileSync(capture + '.path', 'utf8')), false);
     assert.equal(run(['30; touch /tmp/aio-injection', '40', '45']).status, 2);
   } finally { fs.rmSync(temp, {recursive: true, force: true}); }
@@ -53,4 +53,33 @@ test('size changes preserve old placement and persist per monitor outside config
   assert.equal(context.sizeFor('DP-2'), 3);
   context.setSize('DP-2', null);
   assert.equal(context.sizeFor('DP-2'), 0.55);
+});
+
+test('playback monitor follows active Spotify, otherwise default output; rejects invalid sources', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'aio-source-test-'));
+  try {
+    fs.writeFileSync(path.join(temp, 'pactl'), `#!/bin/sh
+case "$*" in
+  '-f json list sink-inputs') printf '%s' "$TEST_INPUTS" ;;
+  '-f json list sinks') printf '%s' "$TEST_SINKS" ;;
+  'get-default-sink') printf '%s' 'speakers' ;;
+esac
+`, {mode:0o755});
+    const sinks = [{index:1,name:'speakers',monitor_source:'speakers.monitor'},
+      {index:2,name:'headphones',monitor_source:'headphones.monitor'}];
+    const run = (inputs, outputs=sinks) => spawnSync('bash', [path.join(root,'scripts/spectrum-source')], {
+      encoding:'utf8', env:{...process.env,PATH:temp+':'+process.env.PATH,
+        TEST_INPUTS:JSON.stringify(inputs),TEST_SINKS:JSON.stringify(outputs)}});
+    const spotify = {sink:2,corked:false,mute:false,properties:{'application.name':'Spotify'}};
+    assert.equal(run([spotify]).stdout.trim(), 'headphones.monitor');
+    assert.equal(run([{...spotify, corked:true}]).stdout.trim(), 'speakers.monitor');
+    assert.equal(run([{...spotify, mute:true}]).stdout.trim(), 'speakers.monitor');
+    assert.equal(run([{...spotify, properties:{'application.name':'Firefox'}}]).stdout.trim(), 'speakers.monitor');
+    assert.equal(run([]).stdout.trim(), 'speakers.monitor');
+    assert.equal(run([spotify], sinks.slice(0,1)).stdout.trim(), 'speakers.monitor');
+    assert.notEqual(run([], [{index:1,name:'speakers',monitor_source:'microphone'}]).status,0);
+    assert.notEqual(run([], [{index:1,name:'speakers',monitor_source:'bad\nmethod=alsa.monitor'}]).status,0);
+    const injection = spawnSync('bash',[path.join(root,'scripts/cava-stream'),'30','40','45','bad\nmethod=alsa']);
+    assert.equal(injection.status,2);
+  } finally { fs.rmSync(temp,{recursive:true,force:true}); }
 });

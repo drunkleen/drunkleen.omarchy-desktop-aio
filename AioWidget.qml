@@ -295,12 +295,13 @@ Item {
             model: AudioBars.bars
             Rectangle {
               id: barW
+              objectName: "aioSpectrumBar"
               required property int index
               readonly property int band: barW.index
               readonly property real lvl: AudioBars.active ? (AudioBars.levels[barW.band] || 0) : 0
               width: (302 - (AudioBars.bars - 1) * Math.min(4, 302 / (AudioBars.bars * 2))) / AudioBars.bars
               radius: 2.5
-              color: Theme.accent
+              color: Theme.primary
               anchors.bottom: parent.bottom
               height: Math.max(6, Math.min(120, barW.lvl * 120))
               Behavior on height {

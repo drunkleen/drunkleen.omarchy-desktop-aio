@@ -5,7 +5,7 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 import "ambient"
 
-// The existing Sakura overlay's background scope and obstacle projection,
+// The existing Sakura overlay's desktop scope and obstacle projection,
 // hosted inside AIO. One pooled field per screen; no particle-owned windows.
 Item {
   id: root
@@ -101,7 +101,8 @@ Item {
       color: 'transparent'
       exclusionMode: ExclusionMode.Ignore
       WlrLayershell.namespace: 'drunkleen.desktop-aio.ambient'
-      WlrLayershell.layer: WlrLayer.Background
+      // Wallpaper remaps cannot cover this desktop layer after theme changes.
+      WlrLayershell.layer: WlrLayer.Bottom
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       mask: Region {}
       readonly property var monitor: Hyprland.monitorFor(screen)

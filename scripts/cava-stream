@@ -3,6 +3,8 @@ set -euo pipefail
 command -v cava >/dev/null 2>&1 || exit 0
 # Only numeric arguments are allowed, even when invoked outside QML.
 [[ ${1:-} =~ ^[0-9]+$ && ${2:-} =~ ^[0-9]+$ && ${3:-} =~ ^[0-9]+$ ]] || exit 2
+source=${4:-auto}
+[[ $source == auto || ( $source =~ ^[A-Za-z0-9_.:@/-]+$ && $source == *.monitor ) ]] || exit 2
 cfg=$(mktemp)
 child=""
 cleanup() { if [[ -n $child ]]; then kill "$child" 2>/dev/null || true; wait "$child" 2>/dev/null || true; fi; rm -f -- "$cfg"; }
@@ -13,8 +15,8 @@ cat > "$cfg" <<EOF
 framerate = $1
 bars = $2
 [input]
-method = pipewire
-source = auto
+method = pulse
+source = $source
 [output]
 method = raw
 raw_target = /dev/stdout

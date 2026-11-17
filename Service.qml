@@ -20,6 +20,15 @@ Item {
   }
   IpcHandler {
     target: "desktopAio"
+    function audioStatus(): string {
+      return JSON.stringify({
+                              active: AudioBars.active,
+                              source: AudioBars.source,
+                              running: AudioBars.cava.running,
+                              energy: AudioBars.energy,
+                              color: String(Theme.primary)
+                            });
+    }
     function ambientStatus(): string {
       return JSON.stringify(ambientSurfaces.status());
     }
