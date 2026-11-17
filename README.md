@@ -463,3 +463,14 @@ the last category are retained.
 following startup resizing, exercises compositor and in-app closes (including
 an open dropdown), checks exact menu coordinates, and reopens settings through
 actual Configure clicks.
+
+### 1.3.3 rain visibility
+
+Rain maintains the selected simultaneous drop density even at high animation
+speeds. Its entry fade adapts to travel time, so drops become visible before
+leaving the screen. Other ambient motion retains its existing timing.
+
+`./scripts/check-runtime rain.qml` checks sustained full-density rain at high
+speed, visible drop opacity, and complete shutdown when disabled. The read-only
+`omarchy-shell desktopAio ambientStatus` command reports effect selection and
+per-monitor motion/visibility diagnostics without changing settings.

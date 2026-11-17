@@ -124,8 +124,13 @@ Item {
         alive = false;
         return;
       }
-    } else
-      transitionOpacity = Math.min(1, transitionOpacity + dt / 0.65);
+    } else {
+      // Fast rain can cross the screen before a fixed 650ms fade completes.
+      // Bound entry fading to a fraction of its actual projected lifetime.
+      const velocity = fallRate * (height / 1440) * owner.settings.speed_factor * proj;
+      const entryDuration = kind === "rain" ? Math.min(0.65, height / Math.max(1, velocity) * 0.15) : 0.65;
+      transitionOpacity = Math.min(1, transitionOpacity + dt / Math.max(0.016, entryDuration));
+    }
     const speed = owner.settings.speed_factor;
     driftX += driftRate * (owner.height / 1440) * wind * dt * speed * (kind === "rain" ? 2.5 : 1);
     // Wrap sideways just outside the visible area. Near the screen plane the

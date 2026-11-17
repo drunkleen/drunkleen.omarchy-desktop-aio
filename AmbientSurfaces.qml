@@ -9,6 +9,21 @@ import "ambient"
 // hosted inside AIO. One pooled field per screen; no particle-owned windows.
 Item {
   id: root
+  function status() {
+    var fields = [];
+    for (var i = 0; i < surfaces.instances.length; i++) {
+      var w = surfaces.instances[i];
+      fields.push(w.diagnostics());
+    }
+    return {
+      mode: Ambient.config.mode,
+      effect: Ambient.effect,
+      reason: Ambient.reason,
+      ownsDesktop: Ambient.ownsDesktop,
+      legacyOwned: Ambient.legacyOwned,
+      fields: fields
+    };
+  }
   property var windowRects: []
   function refreshWindowRects() {
     if (!Ambient.ownsDesktop)
@@ -45,10 +60,37 @@ Item {
   }
   Component.onCompleted: refreshWindowRects()
   Variants {
+    id: surfaces
     model: Quickshell.screens
     delegate: PanelWindow {
       id: win
       required property var modelData
+      function diagnostics() {
+        var samples = [];
+        for (var i = 0; i < field.children.length; i++) {
+          var p = field.children[i];
+          if (p.alive === true && samples.length < 3)
+            samples.push({
+                           x: p.x,
+                           y: p.y,
+                           opacity: p.opacity,
+                           visible: p.visible,
+                           fallRate: p.fallRate
+                         });
+        }
+        return {
+          screen: screen.name,
+          visible: visible,
+          width: width,
+          height: height,
+          fullscreen: fullscreen,
+          obstacles: obstacles,
+          frames: field.frameCount,
+          live: field.liveCount,
+          running: field.animating,
+          samples: samples
+        };
+      }
       screen: modelData
       anchors {
         top: true

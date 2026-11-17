@@ -149,6 +149,16 @@ Item {
         transitionPending = false;
     }
 
+    // Rain density denotes simultaneous drops. Recycling completed drops is
+    // essential at high speed: a fixed spawn rate otherwise drains the field.
+    if (effect === "rain" && effectsEnabled) {
+      while (current < count) {
+        if (!spawnOne(false))
+          break;
+        current++;
+      }
+    }
+
     if (effect !== "none" && effectsEnabled && current < count && settings.spawn_rate > 0) {
       spawnCooldown -= dt;
       if (spawnCooldown <= 0) {

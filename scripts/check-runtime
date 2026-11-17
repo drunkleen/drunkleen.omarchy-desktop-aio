@@ -3,7 +3,7 @@
 # Uses temporary config/state and fixture weather responses, never personal data.
 set -euo pipefail
 scenario=${1:-shell.qml}
-[[ $scenario == shell.qml || $scenario == controls.qml || $scenario == lifecycle.qml ]] || { echo "Unknown scenario" >&2; exit 2; }
+[[ $scenario == shell.qml || $scenario == controls.qml || $scenario == rain.qml || $scenario == lifecycle.qml ]] || { echo "Unknown scenario" >&2; exit 2; }
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 [[ -n ${WAYLAND_DISPLAY:-} ]] || { echo 'A running Wayland session is required' >&2; exit 1; }
 test_dir=$(mktemp -d)

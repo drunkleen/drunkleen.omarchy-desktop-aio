@@ -8,7 +8,9 @@ import "SettingsModel.js" as Model
 // Input is restricted to the card; normal application windows remain above it.
 Item {
   id: root
-  AmbientSurfaces {}
+  AmbientSurfaces {
+    id: ambientSurfaces
+  }
   ContextMenu {
     id: contextMenu
     onConfigureRequested: screen => settings.openFor(screen)
@@ -18,6 +20,9 @@ Item {
   }
   IpcHandler {
     target: "desktopAio"
+    function ambientStatus(): string {
+      return JSON.stringify(ambientSurfaces.status());
+    }
     function configure(): void {
       settings.openFor(Quickshell.screens[0]);
     }
