@@ -65,7 +65,7 @@ Item {
     retiring = false;
     transitionOpacity = 0;
     opacityVariation = 0.65 + 0.35 * Math.random();
-    const k = owner.scaleY;
+    const k = owner.height / 1440;
     const cx = owner.width / 2;
     const cy = owner.height / 2;
 
@@ -80,8 +80,8 @@ Item {
     fallY = anywhere ? cy + (Math.random() * owner.height - cy) / proj : cy - (cy + size * proj
                                                                                * s.size_factor) / proj;
 
-    fallRate = s.fall_px * k * (0.85 + 0.3 * Math.random());
-    driftRate = 55 * k * (0.8 + 0.4 * Math.random());
+    fallRate = s.fall_px * (0.85 + 0.3 * Math.random());
+    driftRate = 55 * (0.8 + 0.4 * Math.random());
     swayAmp = (kind === "rain" ? 0 : kind === "snow" ? 20 + 35 * Math.random() : 14 + 26 * Math.random()) * k;
     swayRate = kind === "snow" ? 0.2 + 0.3 * Math.random() : 0.35 + 0.45 * Math.random();
     swayPhase = Math.random() * 2 * Math.PI;
@@ -127,14 +127,14 @@ Item {
     } else
       transitionOpacity = Math.min(1, transitionOpacity + dt / 0.65);
     const speed = owner.settings.speed_factor;
-    driftX += driftRate * wind * dt * speed * (kind === "rain" ? 2.5 : 1);
+    driftX += driftRate * (owner.height / 1440) * wind * dt * speed * (kind === "rain" ? 2.5 : 1);
     // Wrap sideways just outside the visible area. Near the screen plane the
     // visible world width is narrower, far away it is wider; use the wider bound.
     const half = cx / proj + margin;
     const span = 2 * half;
     driftX = ((driftX - cx + half) % span + span) % span - half + cx;
 
-    fallY += fallRate * dt * speed;
+    fallY += fallRate * (owner.height / 1440) * dt * speed;
     swayPhase += swayRate * dt * speed;
     angle += spin * dt * speed;
     flipPhase += flipRate * dt * speed;

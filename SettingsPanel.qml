@@ -19,7 +19,9 @@ FloatingWindow {
   function tr(key) {
     return strings.t(key);
   }
+  onClosed: visible = false
   function openFor(target) {
+    minimized = false;
     screen = target || Quickshell.screens[0];
     monitorName = screen ? screen.name : '';
     visible = true;

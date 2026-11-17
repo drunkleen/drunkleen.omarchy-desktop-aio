@@ -33,17 +33,29 @@ Item {
   property real spawnCooldown: 0
   property real lastMs: 0
   property bool seeded: false
+  property real seededWidth: 0
+  property real seededHeight: 0
+  function reconcileGeometry() {
+    if (width <= 1 || height <= 1)
+      return;
+    if (seeded && (seededWidth !== width || seededHeight !== height))
+      clearPool();
+    seedOnce();
+  }
 
-  onWidthChanged: seedOnce()
-  onHeightChanged: seedOnce()
+  onWidthChanged: Qt.callLater(reconcileGeometry)
+  onHeightChanged: Qt.callLater(reconcileGeometry)
 
   // Start with most of the pool already in flight so the first frame isn't empty.
   function seedOnce() {
-    if (seeded || petals.count < poolSize || !petals.itemAt(poolSize - 1) || width <= 0 || height <= 0)
+    if (seeded || petals.count < poolSize || !petals.itemAt(poolSize - 1) || width <= 1 || height <= 1 ||
+        !running)
       return;
     if (!effectsEnabled || effect === "none" || count === 0)
       return;
     seeded = true;
+    seededWidth = width;
+    seededHeight = height;
     const initial = Math.max(1, Math.round(count * 0.8));
     for (var i = 0; i < initial; i++) {
       const petal = petals.itemAt(i);
@@ -151,8 +163,8 @@ Item {
     id: ticker
     interval: Math.round(1000 / field.settings.fps)
     repeat: true
-    running: field.running && field.effectsEnabled && field.settings.opacity > 0 && field.width > 0 && field.height
-             > 0 && ((field.effect !== "none" && field.count > 0) || field.liveCount > 0)
+    running: field.running && field.effectsEnabled && field.settings.opacity > 0 && field.width > 1 && field.height
+             > 1 && ((field.effect !== "none" && field.count > 0) || field.liveCount > 0)
     onRunningChanged: {
       field.lastMs = 0;
       if (running)

@@ -15,6 +15,27 @@ PanelWindow {
   property real pointerY: 0
   property var targetScreen: null
   property bool opened: false
+  property bool popupPending: false
+  readonly property bool surfaceReady: !!targetScreen && backingWindowVisible && width === targetScreen.width
+                                       && height === targetScreen.height
+  onSurfaceReadyChanged: if (surfaceReady)
+                           Qt.callLater(showPopup)
+  function showPopup() {
+    if (!opened || !popupPending || !surfaceReady)
+      return;
+    popupPending = false;
+    mainMenu.currentIndex = -1;
+    var x = Math.max(8, Math.min(pointerX, width - mainMenu.width - 8));
+    var y = Math.max(8, Math.min(pointerY, height - mainMenu.height - 8));
+    mainMenu.popup(root.contentItem, x, y);
+  }
+  function configure() {
+    var target = targetScreen;
+    close();
+    Qt.callLater(function () {
+      root.configureRequested(target);
+    });
+  }
   // Retained for integration tests and callers; native menus own submenu layout.
   property string submenu: ""
   readonly property string monitorName: targetScreen ? targetScreen.name : ''
@@ -27,14 +48,12 @@ PanelWindow {
     targetScreen = target;
     pointerX = x;
     pointerY = y;
+    popupPending = true;
     opened = true;
-    Qt.callLater(function () {
-      if (root.opened)
-        mainMenu.popup(Math.max(8, Math.min(root.pointerX, root.width - mainMenu.width - 8)), Math.max(8,
-                                                                                                       root.pointerY));
-    });
+    Qt.callLater(showPopup);
   }
   function close() {
+    popupPending = false;
     mainMenu.close();
     opened = false;
     submenu = '';
@@ -178,7 +197,7 @@ PanelWindow {
     ContextMenuItem {
       text: root.tr('configure')
       glyph: '⚙'
-      onTriggered: root.configureRequested(root.targetScreen)
+      onTriggered: root.configure()
     }
     ContextMenuItem {
       text: root.tr('editConfig')

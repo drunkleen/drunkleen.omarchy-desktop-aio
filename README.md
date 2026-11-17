@@ -448,3 +448,18 @@ An additional real-input regression check is available:
 It clicks the actual controls, verifies persistence/binding synchronization,
 checks rendered particle size and prompt density changes, and exercises native
 submenu selection and Escape/focus release. Temporary configurations are used.
+
+### 1.3.2 surface and window lifecycle fixes
+
+Particle pools wait for usable geometry and reseed after a surface-size change.
+Fall and drift speed use the current surface height, avoiding frozen particles
+seeded while a Wayland surface is still 1×1. Menus wait for the clicked monitor's
+configured overlay and use explicit local coordinates. Configure releases the
+menu grab before opening settings. Each settings session receives a fresh native
+window after close, including its transient dropdown/popups; saved settings and
+the last category are retained.
+
+`./scripts/check-runtime lifecycle.qml` measures downward rain displacement
+following startup resizing, exercises compositor and in-app closes (including
+an open dropdown), checks exact menu coordinates, and reopens settings through
+actual Configure clicks.

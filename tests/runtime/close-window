@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+address=$(hyprctl -j clients | jq -r '.[] | select(.title == "Desktop AIO · Lifecycle test") | .address')
+[[ -n $address && $address != *$'\n'* ]]
+# Omarchy's current Lua dispatcher; retain compatibility with classic Hyprland.
+if hyprctl dispatch "hl.dsp.window.close({ window = \"address:$address\" })" >/dev/null 2>&1; then
+  exit 0
+fi
+hyprctl dispatch closewindow "address:$address"

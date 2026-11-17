@@ -13,7 +13,7 @@ Item {
     id: contextMenu
     onConfigureRequested: screen => settings.openFor(screen)
   }
-  SettingsPanel {
+  SettingsHost {
     id: settings
   }
   IpcHandler {
