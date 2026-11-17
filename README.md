@@ -7,8 +7,7 @@ now-playing track — together in a compact card that follows your Omarchy theme
 
 <img width="100%" src="assets/preview.png" />
 
-<img width="49%" src="assets/preview2.png" />
-<img width="49%" src="assets/preview3.png" />
+<img width="49%" src="assets/preview2.png" /><img width="49%" src="assets/preview3.png" />
 
 *Layout illustration with sample data. Colors follow your active theme.*
 
