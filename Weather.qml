@@ -5,6 +5,7 @@ import "WeatherModel.js" as Model
 
 QtObject {
   id: root
+  property int failures: 0
   property bool available: false
   property string status: "idle"
   property string errorText: ""
@@ -27,13 +28,14 @@ QtObject {
   readonly property int tempNow: current ? Math.round(Number(current.temperature_2m)) : 0
   readonly property string condition: Wmo.conditionFor(code)
   readonly property string glyph: Wmo.symbolFor(code, isDay)
-  readonly property string requestKey: JSON.stringify([Config.showWeather, Config.city, Config.units,
+  readonly property string requestKey: JSON.stringify([Config.ready, Config.showWeather, Config.city, Config.units,
                                                        Config.weatherSec.latitude,
                                                        Config.weatherSec.longitude])
   onRequestKeyChanged: {
     available = false;
     cancel();
-    if (Config.showWeather)
+    failures = 0;
+    if (Config.ready && Config.showWeather)
       changeTimer.restart();
     else {
       status = "idle";
@@ -41,6 +43,7 @@ QtObject {
     }
   }
   function cancel() {
+    recovery.stop();
     generation++;
     if (request) {
       request.destroy();
@@ -61,9 +64,16 @@ QtObject {
       obj.destroy();
     });
   }
+  function failed() {
+    status = "error";
+    errorText = "weather.networkError";
+    failures = Math.min(failures + 1, 6);
+    if (Config.ready && Config.showWeather)
+      recovery.restart();
+  }
   function retry() {
     cancel();
-    if (!Config.showWeather)
+    if (!Config.ready || !Config.showWeather)
       return;
     status = "loading";
     errorText = "";
@@ -85,8 +95,7 @@ QtObject {
                }
                forecast(cities[0].latitude, cities[0].longitude, cities[0].label);
              } catch (e) {
-               status = "error";
-               errorText = "weather.networkError";
+               root.failed();
              }
            });
   }
@@ -106,12 +115,13 @@ QtObject {
              current = data.current;
              daily = data.daily;
              placeName = label;
+             failures = 0;
+             recovery.stop();
              available = true;
              status = "ready";
              errorText = "";
            } catch (e) {
-             status = "error";
-             errorText = "weather.networkError";
+             root.failed();
            }
          });
   }
@@ -178,6 +188,10 @@ QtObject {
   property Component transport: Component {
     HttpRequest {}
   }
+  property Timer recovery: Timer {
+    interval: Math.min(300, 15 * Math.pow(2, Math.max(0, root.failures - 1))) * 1000
+    onTriggered: root.retry()
+  }
   property Timer changeTimer: Timer {
     interval: 250
     onTriggered: root.retry()
@@ -189,9 +203,9 @@ QtObject {
   property Timer refresh: Timer {
     interval: Math.max(60, Config.refreshSeconds) * 1000
     repeat: true
-    running: Config.showWeather
+    running: Config.ready && Config.showWeather
     onTriggered: root.retry()
   }
-  Component.onCompleted: if (Config.showWeather)
+  Component.onCompleted: if (Config.ready && Config.showWeather)
                            changeTimer.restart()
 }

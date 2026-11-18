@@ -499,3 +499,14 @@ monitor capture, and process cleanup. Source-selection tests cover Spotify on a
 separate output, paused/muted streams, removed devices, and invalid input.
 
 Read-only live audio diagnostics: `omarchy-shell desktopAio audioStatus`.
+
+### 1.3.5 startup weather recovery
+
+The saved city, coordinates and label remain in the personal configuration.
+Weather waits for configuration loading before its first request. Failed network
+requests retry after 15, 30, 60, 120, 240, then at most 300 seconds instead of
+waiting for the normal refresh interval. Success restores the normal schedule;
+disabling weather cancels requests and recovery timers.
+
+Read-only weather diagnostics: `omarchy-shell desktopAio weatherStatus`.
+Startup recovery regression: `./scripts/check-runtime weather-startup.qml`.

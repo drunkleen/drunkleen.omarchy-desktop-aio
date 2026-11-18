@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 url=${!#}
+if [[ -n ${AIO_WEATHER_FAIL_ONCE:-} && $url == *forecast* && ! -e $AIO_WEATHER_FAIL_ONCE ]]; then
+  touch "$AIO_WEATHER_FAIL_ONCE"
+  exit 6
+fi
 case "$url" in
   *name=invalid*) echo '{"results":[]}' ;;
   *geocoding*) echo '{"results":[{"name":"Paris","admin1":"Texas","country":"USA","latitude":33,"longitude":-95},{"name":"Paris","admin1":"Île-de-France","country":"France","latitude":48,"longitude":2}]}' ;;

@@ -28,7 +28,8 @@ Column {
     wrapMode: Text.WordWrap
     textFormat: Text.PlainText
     color: Theme.inkDim
-    text: strings.t('weather.' + Weather.searchStatus)
+    visible: Weather.searchStatus !== 'idle'
+    text: visible ? strings.t('weather.' + Weather.searchStatus) : ''
   }
   Repeater {
     model: Weather.suggestions

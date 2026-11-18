@@ -169,6 +169,8 @@ Item {
           textFormat: Text.PlainText
           x: 106
           y: 94
+          width: weatherCluster.width - x
+          elide: Text.ElideRight
           text: Weather.available ? Weather.condition : (Weather.status === "loading" ? strings.t(
                                                                                           "weather.loading") :
                                                                                         strings.t(

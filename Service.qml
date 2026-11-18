@@ -20,6 +20,17 @@ Item {
   }
   IpcHandler {
     target: "desktopAio"
+    function weatherStatus(): string {
+      return JSON.stringify({
+                              city: Config.city,
+                              location: Config.weatherSec.label || Config.city,
+                              status: Weather.status,
+                              available: Weather.available,
+                              error: Weather.errorText,
+                              loadedCity: Weather.locationCity,
+                              retrying: Weather.recovery.running
+                            });
+    }
     function audioStatus(): string {
       return JSON.stringify({
                               active: AudioBars.active,
