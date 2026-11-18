@@ -1,4 +1,4 @@
-# Drunkleen Desktop AIO
+# Desktop AIO
 
 **A little rhythm for your Omarchy desktop.**
 
