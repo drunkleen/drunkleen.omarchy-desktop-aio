@@ -83,3 +83,15 @@ esac
     assert.equal(injection.status,2);
   } finally { fs.rmSync(temp,{recursive:true,force:true}); }
 });
+
+
+test('Cava validates arguments even when the optional analyser is unavailable', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'aio-no-cava-'));
+  try {
+    const run = args => spawnSync('/bin/bash', [path.join(root, 'scripts/cava-stream'), ...args],
+      {env: {...process.env, PATH: temp}});
+    assert.equal(run(['30', '40', '45']).status, 0);
+    assert.equal(run(['invalid', '40', '45']).status, 2);
+    assert.equal(run(['30', '40', '45', 'bad\nmethod=alsa']).status, 2);
+  } finally { fs.rmSync(temp, {recursive: true, force: true}); }
+});
