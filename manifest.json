@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "drunkleen.desktop-aio",
   "name": "Desktop AIO",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "author": "drunkleen",
   "license": "GPL-3.0-only",
   "description": "Theme-aware desktop card, native settings, editable layout and weather-aware seasonal effects.",

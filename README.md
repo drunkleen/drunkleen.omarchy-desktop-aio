@@ -226,12 +226,24 @@ Drag a component outline inside the preview to change its position, or select it
 and edit its X/Y values. Arrow keys move the selected component (8 design pixels
 with snapping, 1 without). Hidden components remain selectable in the editor.
 Positions are bounded to the 708 × 454 design canvas. Weather, weekday, clock,
-date, media and spectrum each have independent visibility and coordinates.
-Now-playing no longer depends on date visibility. The decorative divider hides
-if its related components are hidden or repositioned, so it does not become an
-orphaned decoration. Without customization, the original coordinates and
-artistic composition are retained. The default spectrum has 34 rendered bars;
-existing explicit bar-count settings are now respected by the renderer.
+date, media, spectrum and the diagonal divider each have independent visibility,
+coordinates and stacking. Select a component in the list to drag its outline where it overlaps another
+component. Its TOML settings are
+`show_divider` and `[layout.divider]` with `x` and `y` coordinates.
+
+Older layouts keep their saved coordinates and stacking, with the divider
+initially behind the other components. The divider defaults to visible and
+respects an explicit `show_divider = false` setting. Weather and Clock
+visibility or position have no effect on the divider.
+
+When testing a local checkout, run `omarchy-shell shell rescanPlugins` to reload
+plugins. If the old settings interface persists, an Omarchy shell restart
+(`omarchy restart shell`) starts a fresh QML engine.
+
+Now-playing no longer depends on date visibility. Without customization, the
+original coordinates and artistic composition are retained. The default
+spectrum has 34 rendered bars. Existing explicit bar-count settings are
+respected by the renderer.
 
 ### Persistence, compatibility and resets
 
@@ -499,6 +511,20 @@ monitor capture, and process cleanup. Source-selection tests cover Spotify on a
 separate output, paused/muted streams, removed devices, and invalid input.
 
 Read-only live audio diagnostics: `omarchy-shell desktopAio audioStatus`.
+
+### 1.3.6 settings lifecycle and layout editing
+
+Weather, Components & Layout, and Advanced unload when you leave their
+categories. Text and number editors are created only when needed. Weather
+clears old city suggestions when you leave its category, and Advanced keeps
+the import/export path you typed when you switch categories.
+
+Desktop move and resize, component placement, and stacking drags keep tracking
+the pointer outside the original bounds. **Divider** is independently editable
+in Components & Layout. Old configurations keep their saved component positions
+and relative stacking. Divider is added behind them by default.
+
+See the [changelog](CHANGELOG.md) for the complete release notes.
 
 ### 1.3.5 startup weather recovery
 
