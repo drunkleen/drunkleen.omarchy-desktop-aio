@@ -22,7 +22,7 @@ if [[ $scenario == weather-startup.qml ]]; then
 fi
 AIO_WEATHER_FAIL_ONCE="$weather_failure" PATH="$test_dir/bin:$PATH" XDG_CONFIG_HOME="$test_dir/config" XDG_STATE_HOME="$test_dir/state" timeout 35 qs -p "$test_dir" --no-color > "$test_dir/log" 2>&1 || { cat "$test_dir/log"; exit 1; }
 cat "$test_dir/log"
-rg -q 'AIO_RUNTIME_PASS' "$test_dir/log"
+grep -q 'AIO_RUNTIME_PASS' "$test_dir/log"
 error_status=0
-rg -q 'AIO_RUNTIME_FAIL|\bERROR([[:space:]:]|$)|ReferenceError|TypeError|Binding loop|Unable to assign' "$test_dir/log" || error_status=$?
+grep -Eq 'AIO_RUNTIME_FAIL|(^|[^[:alnum:]_])ERROR([[:space:]:]|$)|ReferenceError|TypeError|Binding loop|Unable to assign' "$test_dir/log" || error_status=$?
 [[ $error_status == 1 ]]
