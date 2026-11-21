@@ -6,6 +6,8 @@ import qs.Commons as Commons
 Column {
   id: root
   property var confirm: null
+  required property string transferPath
+  signal transferPathEdited(string text)
   property string imported: ""
   Commons.Translations {
     id: strings
@@ -29,9 +31,11 @@ Column {
   }
   Ui.TextField {
     id: path
+    objectName: "transferPathInput"
     width: parent.width
-    text: Config.directory + '/desktop-aio-export.toml'
+    text: root.transferPath
     placeholderText: strings.t('advanced.path')
+    onTextEdited: root.transferPathEdited(text)
   }
   Ui.Button {
     text: strings.t('advanced.export')

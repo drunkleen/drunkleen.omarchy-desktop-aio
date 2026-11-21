@@ -132,6 +132,7 @@ QtObject {
       searchRequest.destroy();
       searchRequest = null;
     }
+    suggestions = [];
     searchStatus = "idle";
   }
   function search(query) {

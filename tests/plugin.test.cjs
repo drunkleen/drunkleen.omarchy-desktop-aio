@@ -7,6 +7,26 @@ const vm = require('node:vm');
 const {spawnSync} = require('node:child_process');
 const root = path.resolve(__dirname, '..');
 
+test('runtime runner rejects Quickshell error messages even after a pass marker', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'aio-runtime-test-'));
+  try {
+    fs.writeFileSync(path.join(temp, 'qs'), '#!/bin/sh\nprintf "%s\\n" AIO_RUNTIME_PASS "$TEST_LOG"\n', {mode: 0o755});
+    const run = log => spawnSync('bash', [path.join(root, 'scripts/check-runtime'), 'category-lifecycle.qml'], {
+      encoding: 'utf8',
+      env: {...process.env, WAYLAND_DISPLAY: 'test', PATH: temp + ':' + process.env.PATH, TEST_LOG: log}
+    });
+    const clean = run('WARN quickshell.ipc: fixture warning');
+    assert.equal(clean.status, 0, clean.stdout + clean.stderr);
+    for (const log of ['ERROR quickshell.ipc: fixture error', 'ERROR: fixture error', 'AIO_RUNTIME_FAIL']) {
+      const result = run(log);
+      assert.equal(result.status, 1, result.stdout + result.stderr);
+      assert.ok(result.stdout.includes(log));
+    }
+  } finally {
+    fs.rmSync(temp, {recursive: true, force: true});
+  }
+});
+
 test('TOML overrides preserve literal markup and independent weather settings', () => {
   const context = vm.createContext({});
   vm.runInContext(fs.readFileSync(path.join(root, 'Toml.js'), 'utf8').replace(/^\.pragma library\s*/, ''), context);

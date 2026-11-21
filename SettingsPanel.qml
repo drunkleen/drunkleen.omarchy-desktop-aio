@@ -14,6 +14,7 @@ FloatingWindow {
       scroll.contentItem.contentY = 0;
   })
   property string monitorName: ""
+  property string transferPath: Config.directory + '/desktop-aio-export.toml'
   property string confirmationMessage: tr("confirm.message")
   property var confirmAction: null
   function tr(key) {
@@ -152,10 +153,13 @@ FloatingWindow {
               artOpacity: Config.opacity
             }
           }
-          CitySearch {
+          Loader {
+            objectName: "weatherPageLoader"
             width: parent.width
-            visible: root.category === 'weather'
-            height: visible ? implicitHeight : 0
+            active: root.visible && root.category === 'weather'
+            visible: active
+            focus: true
+            sourceComponent: CitySearch {}
           }
           Column {
             width: parent.width
@@ -272,11 +276,15 @@ FloatingWindow {
                                           accent: ''
                                         })
           }
-          LayoutEditor {
+          Loader {
+            objectName: "layoutPageLoader"
             width: parent.width
-            visible: root.category === 'layout'
-            height: visible ? implicitHeight : 0
-            requestConfirmation: root.confirm
+            active: root.visible && root.category === 'layout'
+            visible: active
+            focus: true
+            sourceComponent: LayoutEditor {
+              requestConfirmation: root.confirm
+            }
           }
           AmbientSettings {
             width: parent.width
@@ -284,11 +292,17 @@ FloatingWindow {
             height: visible ? implicitHeight : 0
             confirm: root.confirm
           }
-          AdvancedSettings {
+          Loader {
+            objectName: "advancedPageLoader"
             width: parent.width
-            visible: root.category === 'advanced'
-            height: visible ? implicitHeight : 0
-            confirm: root.confirm
+            active: root.visible && root.category === 'advanced'
+            visible: active
+            focus: true
+            sourceComponent: AdvancedSettings {
+              confirm: root.confirm
+              transferPath: root.transferPath
+              onTransferPathEdited: text => root.transferPath = text
+            }
           }
           Ui.Button {
             visible: ['general', 'weather', 'appearance', 'spectrum', 'media'].indexOf(root.category) >= 0

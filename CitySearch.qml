@@ -5,6 +5,7 @@ import qs.Commons as Commons
 
 Column {
   id: root
+  Component.onDestruction: Weather.cancelSearch()
   Commons.Translations {
     id: strings
     directory: Qt.resolvedUrl("i18n")
@@ -18,6 +19,7 @@ Column {
     text: strings.t('weather.current') + ' ' + (Config.weatherSec.label || Config.city)
   }
   Ui.TextField {
+    objectName: "citySearchInput"
     width: parent.width
     placeholderText: strings.t('weather.search')
     onTextEdited: Weather.search(text)

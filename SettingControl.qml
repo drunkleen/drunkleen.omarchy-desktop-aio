@@ -39,24 +39,34 @@ Column {
     checked: root.current === true
     onClicked: root.apply(!checked)
   }
-  Ui.TextField {
-    id: field
-    objectName: "text-" + root.setting
-    visible: root.kind === 'text'
+  Loader {
+    objectName: "textInputLoader"
     width: parent.width
-    text: String(root.current === undefined ? '' : root.current)
-    onEditingFinished: if (text !== String(root.current === undefined ? '' : root.current))
-                         root.apply(text)
-    onAccepted: root.apply(text)
+    active: root.visible && root.kind === "text"
+    visible: active
+    focus: true
+    sourceComponent: Ui.TextField {
+      id: field
+      objectName: "text-" + root.setting
+      text: String(root.current === undefined ? '' : root.current)
+      onEditingFinished: if (text !== String(root.current === undefined ? '' : root.current))
+                           root.apply(text)
+      onAccepted: root.apply(text)
+    }
   }
-  Ui.NumberField {
-    visible: root.kind === 'number'
+  Loader {
+    objectName: "numberInputLoader"
     width: parent.width
-    from: root.minimum
-    to: root.maximum
-    stepSize: root.step
-    value: Number(root.current || 0)
-    onModified: value => root.apply(value)
+    active: root.visible && root.kind === "number"
+    visible: active
+    focus: true
+    sourceComponent: Ui.NumberField {
+      from: root.minimum
+      to: root.maximum
+      stepSize: root.step
+      value: Number(root.current || 0)
+      onModified: value => root.apply(value)
+    }
   }
   SelectControl {
     objectName: 'select-' + root.setting
