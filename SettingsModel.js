@@ -1,10 +1,12 @@
 .pragma library
 .import "AmbientModel.js" as Ambient
 
-var components = ['weather', 'weekday', 'clock', 'date', 'media', 'spectrum'];
+var legacyComponents = ['weather', 'weekday', 'clock', 'date', 'media', 'spectrum'];
+var components = ['divider'].concat(legacyComponents);
 var anchors = ['top-left', 'top-center', 'top-right', 'center-left', 'center', 'center-right', 'bottom-left',
                'bottom-center', 'bottom-right', 'free'];
 var geometry = {
+  divider: [312, 18, 50, 134],
   weather: [44, 34, 340, 130],
   weekday: [34, 150, 350, 240],
   clock: [392, 74, 316.72, 74],
@@ -43,7 +45,7 @@ function validate(key, v) {
       throw Error('Invalid ' + key);
     return;
   }
-  if (/^(?:show_(?:weather|weekday|clock|date|media|spectrum)|clock24h|layout\.snap|live_preview)$/.test(
+  if (/^(?:show_(?:divider|weather|weekday|clock|date|media|spectrum)|clock24h|layout\.snap|live_preview)$/.test(
         key)) {
     if (typeof v !== 'boolean')
       throw Error('Expected boolean: ' + key);
@@ -62,24 +64,27 @@ function validate(key, v) {
     if (['weather.city', 'font_display', 'font_icon'].indexOf(key) >= 0 && !v.trim())
       throw Error('Empty ' + key);
   }
-  if (key === 'layout.order' && (!Array.isArray(v) || v.length !== 6 || components.some(function (k) {
-    return v.indexOf(k) < 0;
-  })))
+  if (key === 'layout.order' && !matchesOrder(v, components) && !matchesOrder(v, legacyComponents))
     throw Error('Layout order must contain each component once');
-  if (/^layout\.(weather|weekday|clock|date|media|spectrum)\.[xy]$/.test(key)) {
+  if (/^layout\.(divider|weather|weekday|clock|date|media|spectrum)\.[xy]$/.test(key)) {
     var part = key.split('.'), g = geometry[part[1]], limit = part[2] === 'x' ? 708 - g[2] : 454 - g[3];
     if (typeof v !== 'number' || !isFinite(v) || v < 0 || v > limit)
       throw Error('Invalid component position');
   }
 }
+function matchesOrder(value, ids) {
+  return Array.isArray(value) && value.length === ids.length && ids.every(function (id) {
+    return value.indexOf(id) >= 0;
+  });
+}
 function order(layout) {
   var v = layout && layout.order;
-  try {
-    validate('layout.order', v);
-    return v || components;
-  } catch (e) {
-    return components;
-  }
+  if (matchesOrder(v, legacyComponents))
+    return ['divider'].concat(v);
+  return matchesOrder(v, components) ? v : components;
+}
+function componentVisible(data, id) {
+  return data['show_' + id] !== false;
 }
 function rect(id, layout) {
   var g = geometry[id], p = layout && layout[id] || {};
@@ -100,6 +105,35 @@ function bounded(id, x, y, snap) {
     x: bound(x, 708 - g[2]),
     y: bound(y, 454 - g[3])
   };
+}
+function moveComponent(id, start, dx, dy, snap) {
+  var next = bounded(id, start.x + dx, start.y + dy, snap);
+  var deadZone = snap ? 4 : 0;
+  return {
+    x: Math.abs(dx) > deadZone ? next.x : start.x,
+    y: Math.abs(dy) > deadZone ? next.y : start.y
+  };
+}
+function componentAt(order, layout, selected, x, y) {
+  function contains(id) {
+    var g = rect(id, layout);
+    return x >= g.x && x <= g.x + g.w && y >= g.y && y <= g.y + g.h;
+  }
+  // Selecting a row makes an obscured component reachable without restacking it.
+  if (order.indexOf(selected) >= 0 && contains(selected))
+    return selected;
+  for (var i = order.length - 1; i >= 0; i--)
+    if (contains(order[i]))
+      return order[i];
+  return '';
+}
+function offsetOrder(order, index, offset) {
+  var to = Math.max(0, Math.min(order.length - 1, index + offset));
+  if (index < 0 || index === to)
+    return order;
+  var next = order.slice();
+  next.splice(to, 0, next.splice(index, 1)[0]);
+  return next;
 }
 function reorder(order, id, before) {
   var a = order.filter(function (x) {

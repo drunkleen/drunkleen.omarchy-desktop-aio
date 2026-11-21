@@ -12,14 +12,20 @@ test('patch preserves comments, unknown settings, sections, and resets without d
 test('invalid files and unsafe keys fail closed',()=>{for(const s of ['a=1\na=2','opacity = nope','name = "unfinished','[bad','__proto__.x = 2'])assert.throws(()=>toml.parse(s));assert.throws(()=>model.validate('opacity',2));assert.throws(()=>model.validate('weather.units','kelvin'));assert.throws(()=>model.validate('layout.order',['weather']));});
 test('multiline values and escaped hashes round trip',()=>{const d=toml.parse('a = [\n 1, #one\n "#two",\n]\nb = """hello\nworld"""\nc = \'literal \\" quotes\'\n');assert.deepEqual(plain(d.a),[1,'#two']);assert.equal(d.b,'hello\nworld');assert.equal(toml.value(toml.encode('\t\\path\n"')), '\t\\path\n"');});
 test('old placement migration, explicit anchors and monitor isolation',()=>{const s=model.state({version:1,locked:true,monitors:{DP:{x:.5,y:.7},HDMI:{x:.1,y:.2}},sizes:{DP:.75}});const moved=model.selectAnchor(s,'DP','top-left');assert.equal(moved.monitors.DP,undefined);assert.equal(moved.monitors.HDMI.x,.1);assert.equal(moved.sizes.DP,.75);assert.deepEqual(plain(model.placement('DP',moved,'center',0,0,1000,600,56,56)),{x:56,y:56});assert.equal(s.monitors.DP.x,.5);});
-test('component stacking changes order and preserves free positions',()=>{const l={clock:{x:200,y:80}};assert.equal(model.rect('clock',l).x,200);assert.equal(model.rect('weather',l).x,44);const order=model.reorder(model.components,'weather','clock');assert.equal(order[1],'weather');assert.equal(model.rect('clock',l).x,200);assert.deepEqual(plain(model.bounded('clock',10000,-20,true)),{x:391.28,y:0});});
+test('component stacking changes order and preserves free positions',()=>{const l={clock:{x:200,y:80}};assert.equal(model.rect('clock',l).x,200);assert.equal(model.rect('weather',l).x,44);const order=model.reorder(model.components,'weather','clock');assert.equal(order[2],'weather');assert.equal(model.rect('clock',l).x,200);assert.deepEqual(plain(model.bounded('clock',10000,-20,true)),{x:391.28,y:0});});
 test('city validation rejects bad results and distinguishes namesakes',()=>{const cities=weather.locations(JSON.stringify({results:[{name:'Paris',admin1:'Texas',country:'USA',latitude:33,longitude:-95},{name:'Paris',admin1:'Île-de-France',country:'France',latitude:48,longitude:2},{name:'bad',latitude:1000,longitude:0}]}));assert.equal(cities.length,2);assert.notEqual(cities[0].label,cities[1].label);assert.throws(()=>weather.forecast('{}'));});
 test('request generation prevents stale results and results after disabling',()=>{assert.equal(weather.current(1,2,true),false);assert.equal(weather.current(2,2,false),false);assert.equal(weather.current(2,2,true),true);});
 function configAPI(initial){
  let text=initial;
  const source=fs.readFileSync(path.join(__dirname,'..','Config.qml'),'utf8');
- const ctx=vm.createContext({Toml:toml,Model:model,overrides:toml.parse(text),pending:{},baseline:{},ready:true,invalid:false,writing:false,exists:true,error:'',diskText:text,debounce:{restart(){}},data:{},file:{reload(){ctx.accept(text);},text(){return text;},setText(next){text=next;ctx.pending={};ctx.baseline={};ctx.writing=false;ctx.accept(text);},waitForJob(){}}});
+ const ctx=vm.createContext({Toml:toml,Model:model,overrides:toml.parse(text),pending:{},baseline:{},ready:true,invalid:false,writing:false,exists:true,error:'',diskText:text,debounce:{restart(){}},defaults:toml.parse(fs.readFileSync(path.join(__dirname,'..','config.toml'),'utf8')),file:{reload(){ctx.accept(text);},text(){return text;},setText(next){text=next;ctx.pending={};ctx.baseline={};ctx.writing=false;ctx.accept(text);},waitForJob(){}}});
  ctx.root=ctx;Object.defineProperty(ctx,'dirty',{get(){return Object.keys(ctx.pending).length>0;}});
+ Object.defineProperty(ctx, 'data', {get() {
+   const effective = Object.assign({}, toml.flatten(ctx.overrides), ctx.pending);
+   const parsed = toml.parse(toml.patch('', effective));
+   return toml.merge(ctx.defaults, parsed);
+ }});
+ Object.defineProperty(ctx, 'layout', {get() {return ctx.data.layout;}});
  vm.runInContext(source.slice(source.indexOf('  function get('),source.indexOf('  property FileView defaultFile:')),ctx);
  return {api:ctx,text:()=>text,external:next=>{text=next;ctx.accept(text);}};
 }
@@ -57,4 +63,62 @@ test('quoted unknown keys retain literal dots during export and unrelated update
  const exported=toml.patch('',toml.flatten(d));assert.deepEqual(plain(toml.parse(exported)),plain(d));
  const patched=toml.patch(source,{opacity:.7});assert.equal(toml.parse(patched)['user.name'],'literal');
  assert.throws(()=>toml.parse('custom={__tomlRaw="malformed"}'));
+});
+
+test('legacy layout order and visibility migrate without moving saved artwork', () => {
+  const oldOrder = ['spectrum', 'date', 'weather', 'clock', 'media', 'weekday'];
+  model.validate('layout.order', oldOrder);
+  assert.throws(() => model.validate('layout.order', ['divider', ...oldOrder.slice(1)]));
+  assert.throws(() => model.validate('layout.order', ['divider', ...oldOrder, 'divider']));
+  assert.deepEqual(plain(model.order({order: oldOrder})), ['divider', ...oldOrder]);
+  assert.deepEqual(plain(model.rect('divider', {})), {x: 312, y: 18, w: 50, h: 134});
+  assert.equal(model.componentVisible({}, 'divider'), true);
+  assert.equal(model.componentVisible({show_weather: false}, 'divider'), true);
+  assert.equal(model.componentVisible({layout: {clock: {x: 201}}}, 'divider'), true);
+
+  const config = configAPI('show_clock=false\n[layout]\norder=' + JSON.stringify(oldOrder) +
+                           '\n[layout.weather]\nx=60\ny=40\n');
+  assert.equal(model.componentVisible(config.api.data, 'divider'), true);
+  config.api.resetSection('layout.weather');
+  config.api.setValue('show_clock', true);
+  config.api.flush();
+  assert.equal(toml.parse(config.text()).show_divider, undefined);
+  assert.deepEqual(plain(model.order(config.api.layout)), ['divider', ...oldOrder]);
+
+  const reordered = model.offsetOrder(model.order(config.api.layout), 0, 3);
+  config.api.setValue('layout.order', reordered);
+  config.api.setValues({show_divider: true, 'layout.divider.x': 180, 'layout.divider.y': 46});
+  config.api.setValue('show_weather', false);
+  config.api.flush();
+  const restarted = configAPI(config.text());
+  assert.deepEqual(plain(model.order(restarted.api.layout)), plain(reordered));
+  assert.equal(model.componentVisible(restarted.api.data, 'divider'), true);
+  assert.equal(model.rect('divider', restarted.api.layout).x, 180);
+  restarted.api.resetSection('layout.divider');
+  restarted.api.flush();
+  assert.equal(model.rect('divider', restarted.api.layout).x, 312);
+  assert.equal(model.componentVisible(restarted.api.data, 'divider'), true);
+
+  restarted.api.importText('show_clock=false\n[layout]\norder=' + JSON.stringify(oldOrder));
+  restarted.api.flush();
+  assert.equal(model.componentVisible(restarted.api.data, 'divider'), true);
+  restarted.api.importText('show_divider=false');
+  restarted.api.flush();
+  assert.equal(model.componentVisible(restarted.api.data, 'divider'), false);
+  restarted.api.resetAll();
+  restarted.api.flush();
+  assert.equal(model.componentVisible(restarted.api.data, 'divider'), true);
+});
+
+test('component drag deltas preserve off-grid origins and clamp large movements', () => {
+  const start = model.rect('divider', {divider: {x: 117.5, y: 23}});
+  assert.deepEqual(plain(model.moveComponent('divider', start, 1, 3, true)), {x: 117.5, y: 23});
+  assert.deepEqual(plain(model.moveComponent('divider', start, 28, 0, true)), {x: 144, y: 23});
+  assert.deepEqual(plain(model.moveComponent('divider', start, 21.5, 4, false)), {x: 139, y: 27});
+  assert.deepEqual(plain(model.moveComponent('divider', start, 900, -900, false)), {x: 658, y: 0});
+  assert.equal(model.componentAt(model.components, {}, 'weather', 350, 55), 'weather');
+  assert.equal(model.componentAt(model.components, {}, 'divider', 350, 55), 'divider');
+  const overlap = {clock: {x: 80, y: 60}};
+  assert.equal(model.componentAt(model.components, overlap, '', 100, 80), 'clock');
+  assert.equal(model.componentAt(model.components, overlap, 'weather', 100, 80), 'weather');
 });

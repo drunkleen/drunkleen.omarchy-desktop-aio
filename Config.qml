@@ -184,7 +184,9 @@ QtObject {
       if (!path.startsWith("/"))
         throw Error("Use an absolute file path");
       transfer.path = path;
-      transfer.setText(Toml.patch("# Desktop AIO export\n", Toml.flatten(data)));
+      var values = Toml.flatten(data);
+      values['layout.order'] = Model.order(layout);
+      transfer.setText(Toml.patch("# Desktop AIO export\n", values));
       transfer.waitForJob();
     } catch (e) {
       error = String(e);

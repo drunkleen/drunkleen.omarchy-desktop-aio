@@ -76,6 +76,7 @@
   "page.spectrum": "Audio Spectrum",
   "page.media": "Media",
   "page.advanced": "Advanced",
+  "component.divider": "Divider",
   "component.weather": "Weather",
   "show_weather": "Show weather",
   "component.weekday": "Weekday",

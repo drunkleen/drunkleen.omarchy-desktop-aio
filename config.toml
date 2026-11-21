@@ -26,6 +26,7 @@ show_date = true
 show_weather = true
 show_spectrum = true
 show_media = true
+show_divider = true
 
 # Clock
 clock24h = true
@@ -53,8 +54,9 @@ sensitivity = 1.0
 max_width = 320
 
 # Custom positions are in design pixels; order is back-to-front stacking.
+# The diagonal divider uses layout.divider.x/y and the top-level show_divider option.
 [layout]
-order = ["weather", "weekday", "clock", "date", "media", "spectrum"]
+order = ["divider", "weather", "weekday", "clock", "date", "media", "spectrum"]
 snap = true
 
 # Sakura preserves the existing style; Automatic is an explicit opt-in.

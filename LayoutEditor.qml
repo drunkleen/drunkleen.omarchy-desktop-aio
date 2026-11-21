@@ -36,6 +36,7 @@ Column {
     radius: 8
     clip: true
     AioWidget {
+      objectName: "layoutPreview"
       anchors.centerIn: parent
       s: Math.min(parent.width / 708, parent.height / 454)
       editing: true
@@ -51,6 +52,7 @@ Column {
       required property int index
       width: root.width
       height: 50
+      z: root.dragged === modelData ? 1 : 0
       Rectangle {
         anchors.fill: parent
         color: root.selected === drop.modelData ? Theme.inkFaint : 'transparent'
@@ -58,7 +60,6 @@ Column {
         transform: Translate {
           y: root.dragged === drop.modelData ? root.dragOffset : 0
         }
-        z: root.dragged === drop.modelData ? 100 : 0
         Row {
           anchors.fill: parent
           spacing: 6
@@ -67,36 +68,6 @@ Column {
             width: 38
             height: 46
             tooltipText: strings.t('layout.reorder')
-            MouseArea {
-              id: handle
-              anchors.fill: parent
-              property real originY
-              onPressed: mouse => {
-                root.dragged = drop.modelData;
-                originY = mapToItem(root, mouse.x, mouse.y).y;
-                root.selected = drop.modelData;
-              }
-              onPositionChanged: mouse => {
-                if (pressed)
-                  root.dragOffset = mapToItem(root, mouse.x, mouse.y).y - originY;
-              }
-              onReleased: {
-                var order = Model.order(Config.layout).slice(), i = order.indexOf(root.dragged), to = Math.max(
-                                                                                                   0, Math.min(
-                                                                                                     order.length
-                                                                                                     - 1, i + Math.round(
-                                                                                                       root.dragOffset
-                                                                                                       / 50)));
-                if (i >= 0 && i !== to) {
-                  var moved = order.splice(i, 1)[0];
-                  order.splice(to, 0, moved);
-                  Config.setSectionValue('layout', 'order', order);
-                }
-                root.dragged = '';
-                root.dragOffset = 0;
-              }
-              onCanceled: root.dragged = ''
-            }
           }
           Ui.Button {
             width: Math.max(70, drop.width - 200)
@@ -107,9 +78,10 @@ Column {
             onClicked: root.selected = drop.modelData
           }
           Ui.Button {
-            text: Config.get('show_' + drop.modelData, true) ? '✓' : '○'
+            objectName: "visibility-" + drop.modelData
+            text: Model.componentVisible(Config.data, drop.modelData) ? '✓' : '○'
             focusable: true
-            onClicked: Config.setValue('show_' + drop.modelData, !Config.get('show_' + drop.modelData, true))
+            onClicked: Config.setValue('show_' + drop.modelData, !Model.componentVisible(Config.data, drop.modelData))
           }
           Ui.Button {
             text: '↺'
@@ -119,6 +91,37 @@ Column {
               Config.resetSection('layout.' + drop.modelData);
             })
           }
+        }
+      }
+      MouseArea {
+        objectName: "reorder-" + drop.modelData
+        width: 38
+        height: 46
+        preventStealing: true
+        cursorShape: Qt.SizeVerCursor
+        property real originY
+        onPressed: mouse => originY = mapToItem(root, mouse.x, mouse.y).y
+        onPositionChanged: mouse => {
+          if (!pressed)
+            return;
+          var delta = mapToItem(root, mouse.x, mouse.y).y - originY;
+          if (!root.dragged && Math.abs(delta) < 4)
+            return;
+          root.dragged = drop.modelData;
+          root.dragOffset = delta;
+        }
+        onReleased: mouse => {
+          var order = Model.order(Config.layout);
+          var offset = Math.round((mapToItem(root, mouse.x, mouse.y).y - originY) / drop.height);
+          var next = Model.offsetOrder(order, order.indexOf(drop.modelData), offset);
+          root.dragged = "";
+          root.dragOffset = 0;
+          if (next !== order)
+            Config.setSectionValue('layout', 'order', next);
+        }
+        onCanceled: {
+          root.dragged = "";
+          root.dragOffset = 0;
         }
       }
     }
@@ -144,13 +147,10 @@ Column {
       focusable: true
       tooltipText: strings.t('layout.back')
       onClicked: {
-        var a = Model.order(Config.layout).slice(), i = a.indexOf(root.selected);
-        if (i > 0) {
-          var t = a[i - 1];
-          a[i - 1] = a[i];
-          a[i] = t;
-          Config.setValue('layout.order', a);
-        }
+        var order = Model.order(Config.layout);
+        var next = Model.offsetOrder(order, order.indexOf(root.selected), -1);
+        if (next !== order)
+          Config.setValue('layout.order', next);
       }
     }
     Ui.Button {
@@ -158,13 +158,10 @@ Column {
       focusable: true
       tooltipText: strings.t('layout.front')
       onClicked: {
-        var a = Model.order(Config.layout).slice(), i = a.indexOf(root.selected);
-        if (i < a.length - 1) {
-          var t = a[i + 1];
-          a[i + 1] = a[i];
-          a[i] = t;
-          Config.setValue('layout.order', a);
-        }
+        var order = Model.order(Config.layout);
+        var next = Model.offsetOrder(order, order.indexOf(root.selected), 1);
+        if (next !== order)
+          Config.setValue('layout.order', next);
       }
     }
   }

@@ -21,7 +21,9 @@ Item {
   property string selectedComponent: "weather"
   signal componentSelected(string componentId)
   function position(id) {
-    return Model.rect(id, Config.layout);
+    var rect = Model.rect(id, Config.layout);
+    var editor = box.item ? box.item.componentEditor : null;
+    return editor && editor.dragged === id ? editor.dragPosition : Qt.point(rect.x, rect.y);
   }
   function stacking(id) {
     return Model.order(Config.layout).indexOf(id);
@@ -48,6 +50,7 @@ Item {
     id: wideCard
     Item {
       id: w
+      property alias componentEditor: editor
       implicitWidth: 708
       implicitHeight: 454
 
@@ -67,27 +70,31 @@ Item {
       }
 
       ComponentEditor {
+        id: editor
         anchors.fill: parent
         z: 1000
         visible: root.editing
         selected: root.selectedComponent
-        onSelectedChanged: root.componentSelected(selected)
+        onComponentSelected: componentId => root.componentSelected(componentId)
       }
 
-      // ---- diagonal divider ----
       Shape {
-        visible: Config.showWeather && Config.showClock && !Config.layout.weather && !Config.layout.clock
-        z: -1
-        anchors.fill: parent
+        objectName: "diagonalDivider"
+        visible: Model.componentVisible(Config.data, "divider")
+        x: root.position("divider").x
+        y: root.position("divider").y
+        z: root.stacking("divider")
+        width: 50
+        height: 134
         ShapePath {
           strokeColor: w.ink
           strokeWidth: 2
           fillColor: "transparent"
-          startX: 360
-          startY: 20
+          startX: 48
+          startY: 2
           PathLine {
-            x: 314
-            y: 150
+            x: 2
+            y: 132
           }
         }
       }
